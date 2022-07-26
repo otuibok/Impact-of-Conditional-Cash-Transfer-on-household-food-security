@@ -20,22 +20,7 @@ replace FS_cat =0 if FS<1
 **Calculating food security index according to the benefitting & noon benefitting households
  sum TotalFoodExpen PerCapitaFoodExpen if BenefittingHH==1
 
-    Variable |       Obs        Mean    Std. Dev.       Min        Max
--------------+--------------------------------------------------------
-TotalFoodE~n |        90    31917.78    16122.09       3500      95300
-PerCapitaF~n |        90    6304.667    4202.955   673.3333      20600
-MPCE for benefitting HH =6304.667
-2/3 MPCE for benefitting HH = 6304.667 * 2/3 = 4224.12
-
-
-. sum TotalFoodExpen PerCapitaFoodExpen if BenefittingHH==0
-
-    Variable |       Obs        Mean    Std. Dev.       Min        Max
--------------+--------------------------------------------------------
-TotalFoodE~n |        60    34898.67    15978.41       9800     102200
-PerCapitaF~n |        60    6305.115    5001.965        895   27266.67
-MPCE for non-benefitting HH =6305.115
-2/3 MPCE for benefitting HH = 6305.115 * 2/3 = 4224.42
+  . sum TotalFoodExpen PerCapitaFoodExpen if BenefittingHH==0
 
 gen foodsec = PerCapitaFoodExpen/4224.12 if BenefittingHH==1
 lab var foodsec "food security scores by benefitting and non-benefitting HH"
@@ -155,7 +140,7 @@ psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities D
 psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen)  kernel bw(0.06) common
 psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen)  kernel bw(0.01) common
 
-**Queitly regression
+**Quietly regression
 quietly psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen) noreplacement
 pstest HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, summary both
 
