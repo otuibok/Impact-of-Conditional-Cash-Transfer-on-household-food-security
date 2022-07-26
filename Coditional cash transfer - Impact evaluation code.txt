@@ -1,0 +1,180 @@
+/*Do file for calculating food security from monthly food expenditure data */
+
+**Calculating total monthly  food expenditure
+egen TotalFoodExpen = rowtotal (Maize Wheat Garri_fufu Rice_paddy Root_tubers Pulses Vegetables Milk Fresh_fruit Fish_seaFood White_meat Red_meat Starch Eggs Oil_butter Sugar_salt Spices)
+lab var TotalFoodExpen "total monthly food expenditure in naira"  
+browse TotalFoodExpen
+sum TotalFoodExpen
+***Calculating  per capita food expenditure for ith households
+gen PerCapitaFoodExpen = TotalFoodExpen/HH_size
+lab var PerCapitaFoodExpen " monthly per capita food expenditure "
+browse HHID HH_size TotalFoodExpen PerCapitaFoodExpen
+
+**Calaculating food security index combine for all households (mean per capita food expenditure = N6304.846, 2/3 MPCFE = N4,203.23)
+sum TotalFoodExpen PerCapitaFoodExpen
+gen FS = PerCapitaFoodExpen/4203.23
+lab var FS "food security scores"
+gen FS_cat =1 if FS>=1
+replace FS_cat =0 if FS<1
+
+**Calculating food security index according to the benefitting & noon benefitting households
+ sum TotalFoodExpen PerCapitaFoodExpen if BenefittingHH==1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+TotalFoodE~n |        90    31917.78    16122.09       3500      95300
+PerCapitaF~n |        90    6304.667    4202.955   673.3333      20600
+MPCE for benefitting HH =6304.667
+2/3 MPCE for benefitting HH = 6304.667 * 2/3 = 4224.12
+
+
+. sum TotalFoodExpen PerCapitaFoodExpen if BenefittingHH==0
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+TotalFoodE~n |        60    34898.67    15978.41       9800     102200
+PerCapitaF~n |        60    6305.115    5001.965        895   27266.67
+MPCE for non-benefitting HH =6305.115
+2/3 MPCE for benefitting HH = 6305.115 * 2/3 = 4224.42
+
+gen foodsec = PerCapitaFoodExpen/4224.12 if BenefittingHH==1
+lab var foodsec "food security scores by benefitting and non-benefitting HH"
+replace foodsec = PerCapitaFoodExpen/4224.42 if BenefittingHH==0
+gen foodsec_category =1 if foodsec>=1
+lab var foodsec_category "Grouping of food security scores by benefitting and non-benefitting HH"
+replace foodsec_category =0 if foodsec<1
+
+tab foodsec_category BenefittingHH
+
+***Socio-economics 
+tab HH_size if BenefittingHH==1
+tab HH_size if BenefittingHH==0
+
+tab FarmSizeHa if BenefittingHH==1
+tab FarmSizeHa if BenefittingHH==0
+
+tab var43 if BenefittingHH==1
+tab var43 if BenefittingHH==0
+
+
+tab Religion if BenefittingHH==1
+tab Religion if BenefittingHH==0
+
+
+***Asset accumulation
+Drinking_water Toilet Floor_material Roof_material Wall_material Energy_source
+
+tab Drinking_water if BenefittingHH==1
+tab Drinking_water if BenefittingHH==0
+
+tab Toilet if BenefittingHH==1
+tab Toilet if BenefittingHH==0
+
+tab Floor_material if BenefittingHH==1
+tab Floor_material if BenefittingHH==0
+
+tab Roof_material if BenefittingHH==1
+tab Roof_material if BenefittingHH==0
+
+tab Wall_material if BenefittingHH==1
+tab Wall_material if BenefittingHH==0
+
+tab Energy_source if BenefittingHH==1
+tab Energy_source if BenefittingHH==0
+
+tab Gender  if INDID==1 & BenefittingHH==1
+tab Gender  if INDID==1 & BenefittingHH==0
+
+tab Marital_Status if INDID==1 & BenefittingHH==1
+tab Marital_Status if INDID==1 & BenefittingHH==0
+
+* Education
+
+tab Education if INDID==1 & BenefittingHH==1
+tab Education if INDID==1 & BenefittingHH==0
+
+* Age
+tab Age if INDID==1 & BenefittingHH==1
+tab Age if INDID==1 & BenefittingHH==0
+
+// CONDITIONAL CASH TRANSFER SECTION //
+gen Training2 = 3 if Training ==2
+replace Training2 =2 if Training==1
+replace Training2=1 if Training==0
+
+gen New_business2 = 3 if New_business ==2
+replace New_business2 =2 if New_business==1
+replace New_business2=1 if New_business==0
+
+gen Bux_boost2 = 3 if Bux_boost ==2
+replace Bux_boost2 =2 if Bux_boost==1
+replace Bux_boost2=1 if Bux_boost==0
+
+gen Dependecy2 = 3 if Dependecy ==2
+replace Dependecy2 =2 if Dependecy==1
+replace Dependecy2=1 if Dependecy==0
+
+gen Psy_Increase2 = 3 if Psy_Increase ==2
+replace Psy_Increase2 =2 if Psy_Increase==1
+replace Psy_Increase2=1 if Psy_Increase==0
+
+gen Groups_inclusion2 = 3 if Groups_inclusion ==2
+replace Groups_inclusion2 =2 if Groups_inclusion==1
+replace Groups_inclusion2=1 if Groups_inclusion==0
+
+
+gen Selfconfidence2 = 3 if Selfconfidence ==2
+replace Selfconfidence2 =2 if Selfconfidence==1
+replace Selfconfidence2=1 if Selfconfidence==0
+
+***Propensity score analysis
+set seed 1000
+gen random = runiform()
+sort random
+ssc install psmatch2, replace
+psmatch2 BenefittingHH gender HH_size age marital_status education, outcome(foodsec)
+psmatch2 BenefittingHH HH_size gender age marital_status education, outcome(PerCapitaFoodExpen)
+psmatch2 BenefittingHH HH_size gender age marital_status education, outcome(PerCapitaFoodExpen )ate
+psmatch2 BenefittingHH HH_size gender age marital_status education, outcome(PerCapitaFoodExpen ) logit
+psmatch2 BenefittingHH HH_size gender age marital_status education, outcome(PerCapitaFoodExpen ) common
+psmatch2 BenefittingHH HH_size gender age marital_status education, outcome(PerCapitaFoodExpen ) common neighbor(1)
+psmatch2 BenefittingHH HH_size gender age marital_status education, outcome(PerCapitaFoodExpen ) common radius caliper(0.1)
+psmatch2 BenefittingHH HH_size gender age marital_status education, outcome(PerCapitaFoodExpen ) common kernel
+
+pstest  gender age marital_status education
+pstest  gender age marital_status education, summary both
+
+*merit equation with different type of PS matching
+psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen)
+pstest HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, summary both
+psgraph, treated( BenefittingHH) pscore( _pscore ) bin (50)
+psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen) logit
+psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen) noreplacement
+psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen) caliper(0.01)
+psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen) caliper(0.01) radius
+psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen)  kernel bw(0.06) common
+psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen)  kernel bw(0.01) common
+
+**Queitly regression
+quietly psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen) noreplacement
+pstest HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, summary both
+
+quietly psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen) logit
+pstest HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, summary both
+
+quietly psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen) caliper(0.01)
+pstest HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, summary both
+
+quietly psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen) caliper(0.01) radius
+pstest HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, summary both
+
+quietly psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen)  kernel bw(0.06) common
+pstest HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, summary both
+
+quietly psmatch2 BenefittingHH HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, outcome(LPerCapitaFoodExpen)  kernel bw(0.01) common
+pstest HH_size age gender i.marital_status education Utilities Drinking_water Toilet i.Floor_material Roof_material Wall_material Energy_source, summary both
+
+
+
+
+
